@@ -1,0 +1,16 @@
+Temp
+UserSettings
+ProjectSettings
+Packages
+obj
+Logs
+Library
+
+*.meta
+TextMesh Pro
+
+
+.vsconfig
+
+*.csproj
+.vs
