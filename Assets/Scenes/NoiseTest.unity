@@ -333,12 +333,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 38e395a464a589f44baa22634cbafb87, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  textureWidth: 512
-  textureHeight: 512
+  textureWidth: 1024
+  textureHeight: 1024
   numPlayers: 10
-  spawnDistance: 256
-  circleRadius: 10
-  blurScale: 0
+  spawnDistance: 0
+  circleRadius: 60
+  blurScale: 1
   circlePositions: []
 --- !u!64 &1585382600
 MeshCollider:

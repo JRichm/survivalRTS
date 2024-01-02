@@ -18,10 +18,12 @@ public class PlayerSpawnArea : MonoBehaviour {
     public float blurScale = 0.1f;
     public Vector2[] circlePositions;
 
-    // Start is called before the first frame update
-    void Start()
-    {
 
+    Material material;
+
+    // Start is called before the first frame update
+    void Start() {
+        material = GetComponent<Renderer>().material;
         float minSpawnDistance = textureHeight / 10;
         float maxSpawnDistance = textureHeight / 4;
 
@@ -36,11 +38,9 @@ public class PlayerSpawnArea : MonoBehaviour {
             spawnDistance = maxSpawnDistance;
         }
 
-
         Vector2[] spawnPoints = GenerateSpawnPoints(numPlayers, spawnDistance);
 
         GenerateTexture(spawnPoints);
-
     }
 
     private void GenerateTexture(Vector2[] spawnPoints) {
@@ -53,13 +53,22 @@ public class PlayerSpawnArea : MonoBehaviour {
         }
 
         foreach (Vector2 position in spawnPoints) {
-            DrawBlurredCircle(pixels, Mathf.RoundToInt(position.x), Mathf.RoundToInt(position.y), circleRadius, blurScale, Color.black);
+            DrawBlurredCircle(pixels, Mathf.RoundToInt(position.x), Mathf.RoundToInt(position.y), circleRadius, blurScale);
         }
 
         mapTexture.SetPixels(pixels);
         mapTexture.Apply();
 
-        GetComponent<Renderer>().material.mainTexture = mapTexture;
+        material.shader = Shader.Find("Standard");
+        material.SetFloat("_Mode", 3);
+        material.mainTexture = mapTexture;
+        material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+        material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+        material.SetInt("_ZWrite", 0);
+        material.DisableKeyword("_ALPHATEST_ON");
+        material.EnableKeyword("_ALPHABLEND_ON");
+        material.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+        material.renderQueue = 3000; // Set a valid render queue value
     }
 
     private Vector2[] GenerateSpawnPoints(int numPlayers, float distance) {
@@ -72,15 +81,16 @@ public class PlayerSpawnArea : MonoBehaviour {
 
             spawnPoints[i] = new Vector2(textureWidth / 2 + x, textureHeight / 2 + y);
         }
-
         return spawnPoints;
     }
 
-    private void DrawBlurredCircle(Color[] pixels, int centerX, int centerY, int radius, float blurScale, Color color) {
+    private void DrawBlurredCircle(Color[] pixels, int centerX, int centerY, int radius, float blurScale) {
 
         // min/max range of blur in pixels
-        float maxBlurDistance = radius + (blurScale * radius);
+        float maxBlurDistance = radius + (blurScale * radius * 2);
         float minBlurDistance = radius - (blurScale * radius);
+
+        Vector4 color = new Vector4(0, 0, 0, 0);
 
         for (int x = -radius; x <= radius; x++) {
             for (int y = -radius; y <= radius; y++) {
@@ -100,7 +110,6 @@ public class PlayerSpawnArea : MonoBehaviour {
                 if (distance >= minBlurDistance && distance <= maxBlurDistance) {
                     alpha = 1.0f - Mathf.Clamp01((distance - minBlurDistance) / (blurScale * radius));
                 }
-
 
                 pixels[yPos * textureWidth + xPos] = Color.Lerp(pixels[yPos * textureWidth + xPos], color, alpha);
             }
