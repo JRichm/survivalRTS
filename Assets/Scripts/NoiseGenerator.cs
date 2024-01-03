@@ -18,6 +18,9 @@ public class NoiseGenerator : MonoBehaviour {// Width and height of the texture 
     private Color[] pix;
     private Renderer rend;
 
+    public GameObject spawnObj;
+    public GameObject parentObj;
+
     void Start() {
         rend = GetComponent<Renderer>();
 
@@ -28,7 +31,7 @@ public class NoiseGenerator : MonoBehaviour {// Width and height of the texture 
         CalcNoise();
     }
 
-    void CalcNoise() {
+    private void CalcNoise() {
         // For each pixel in the texture...
         float y = 0.0F;
 
@@ -47,5 +50,31 @@ public class NoiseGenerator : MonoBehaviour {// Width and height of the texture 
         // Copy the pixel data to the texture and load it into the GPU.
         noiseTex.SetPixels(pix);
         noiseTex.Apply();
+
+        SpawnBlocks();
+    }
+
+    private void SpawnBlocks() {
+        Debug.Log("spawning blocks");
+        for (int x = 0; x < pixWidth; x++) {
+            for (int y = 0; y < pixHeight; y++) {
+
+                Color color = pix[(int)x + (int)y];
+                Debug.Log(color);
+
+                Vector3 spawnPosition = new Vector3(x, 0, y);
+                //Debug.DrawLine(spawnPosition, new Vector3(spawnPosition.x, spawnPosition.y, spawnPosition.z), Color.red);
+
+
+                Vector3 centerOffset = new Vector3(transform.localScale.x * 5, 0, transform.localScale.z * 5);
+
+
+                GameObject newObj = Instantiate(spawnObj);
+                newObj.transform.parent = parentObj.transform;
+                newObj.transform.localScale = Vector3.one / 2;
+                newObj.transform.localPosition = spawnPosition - centerOffset;
+
+            }
+        }
     }
 }
