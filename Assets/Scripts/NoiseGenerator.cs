@@ -22,6 +22,8 @@ public class NoiseGenerator : MonoBehaviour {// Width and height of the texture 
     public GameObject parentObj;
 
     void Start() {
+
+        // get renderer component
         rend = GetComponent<Renderer>();
 
         // Set up the texture and a Color array to hold pixels during processing.
@@ -54,26 +56,28 @@ public class NoiseGenerator : MonoBehaviour {// Width and height of the texture 
         SpawnBlocks();
     }
 
+
+
     private void SpawnBlocks() {
         Debug.Log("spawning blocks");
         for (int x = 0; x < pixWidth; x++) {
             for (int y = 0; y < pixHeight; y++) {
 
-                Color color = pix[(int)x + (int)y];
-                Debug.Log(color);
+                Color color = pix[(int)y * pixWidth + (int)x];
 
-                Vector3 spawnPosition = new Vector3(x, 0, y);
-                //Debug.DrawLine(spawnPosition, new Vector3(spawnPosition.x, spawnPosition.y, spawnPosition.z), Color.red);
+                float pixNum = (color[0] * 10) / 10;
+                Debug.Log(pixNum);
 
+                float randFloat = Random.Range(0.0f, 1.0f);
+                if (randFloat < pixNum && randFloat > 0.3f) {
+                    Vector3 spawnPosition = new Vector3(x, 0, y);
+                    Vector3 centerOffset = new Vector3(pixWidth / 2 - 0.5f, 0, pixHeight / 2 - 0.5f);
 
-                Vector3 centerOffset = new Vector3(transform.localScale.x * 5, 0, transform.localScale.z * 5);
-
-
-                GameObject newObj = Instantiate(spawnObj);
-                newObj.transform.parent = parentObj.transform;
-                newObj.transform.localScale = Vector3.one / 2;
-                newObj.transform.localPosition = spawnPosition - centerOffset;
-
+                    GameObject newObj = Instantiate(spawnObj);
+                    newObj.transform.parent = parentObj.transform;
+                    newObj.transform.localScale = Vector3.one * (pixNum);
+                    newObj.transform.localPosition = spawnPosition - centerOffset;
+                }
             }
         }
     }

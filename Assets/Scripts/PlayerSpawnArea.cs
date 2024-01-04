@@ -23,7 +23,11 @@ public class PlayerSpawnArea : MonoBehaviour {
 
     // Start is called before the first frame update
     void Start() {
+
+        // get material of attatched planes
         material = GetComponent<Renderer>().material;
+
+        // calculate min/max spawn distance
         float minSpawnDistance = textureHeight / 10;
         float maxSpawnDistance = textureHeight / 4;
 
@@ -38,27 +42,38 @@ public class PlayerSpawnArea : MonoBehaviour {
             spawnDistance = maxSpawnDistance;
         }
 
+        // create spawnPoints list
         Vector2[] spawnPoints = GenerateSpawnPoints(numPlayers, spawnDistance);
 
+
+        // generate texture based on spawn points
         GenerateTexture(spawnPoints);
     }
 
     private void GenerateTexture(Vector2[] spawnPoints) {
+
+        // create new texture and set its filter mode to point
         Texture2D mapTexture = new Texture2D(textureWidth, textureHeight);
         mapTexture.filterMode = FilterMode.Point;
 
+
+        // create new array of colors for every pixel of texture
+        // set them to white
         Color[] pixels = new Color[textureWidth * textureHeight];
         for (int i = 0; i < pixels.Length; i++) {
             pixels[i] = Color.white;
         }
 
+        // draw circle for every spawn point
         foreach (Vector2 position in spawnPoints) {
             DrawBlurredCircle(pixels, Mathf.RoundToInt(position.x), Mathf.RoundToInt(position.y), circleRadius, blurScale);
         }
 
+        // set and apply pixels
         mapTexture.SetPixels(pixels);
         mapTexture.Apply();
 
+        // update material component settings
         material.shader = Shader.Find("Standard");
         material.SetFloat("_Mode", 3);
         material.mainTexture = mapTexture;
@@ -72,10 +87,17 @@ public class PlayerSpawnArea : MonoBehaviour {
     }
 
     private Vector2[] GenerateSpawnPoints(int numPlayers, float distance) {
+        // initialize vector2 list of spawn points
         Vector2[] spawnPoints = new Vector2[numPlayers];
 
+
+        // loop through number of players
         for (int i = 0;i < numPlayers; i++) {
+            
+            // calculate angle between each player
             float angle = (360f / numPlayers) * i;
+
+            // calculate position of each player
             float x = Mathf.Cos(Mathf.Deg2Rad * angle) * distance;
             float y = Mathf.Sin(Mathf.Deg2Rad * angle) * distance;
 
@@ -90,13 +112,18 @@ public class PlayerSpawnArea : MonoBehaviour {
         float maxBlurDistance = radius + (blurScale * radius * 2);
         float minBlurDistance = radius - (blurScale * radius);
 
-        Vector4 color = new Vector4(0, 0, 0, 0);
 
+        // transparent color
+        Vector4 transparent = new Vector4(0, 0, 0, 0);
+
+        // loop through pixel in circle range
         for (int x = -radius; x <= radius; x++) {
             for (int y = -radius; y <= radius; y++) {
+                // position of current pixelx
                 int xPos = centerX + x;
                 int yPos = centerY + y;
 
+                // distance from center circle
                 float distance = Mathf.Sqrt(x * x + y * y);
 
                 float alpha = 0.0f;
@@ -111,7 +138,7 @@ public class PlayerSpawnArea : MonoBehaviour {
                     alpha = 1.0f - Mathf.Clamp01((distance - minBlurDistance) / (blurScale * radius));
                 }
 
-                pixels[yPos * textureWidth + xPos] = Color.Lerp(pixels[yPos * textureWidth + xPos], color, alpha);
+                pixels[yPos * textureWidth + xPos] = Color.Lerp(pixels[yPos * textureWidth + xPos], transparent, alpha);
             }
         }
     }
