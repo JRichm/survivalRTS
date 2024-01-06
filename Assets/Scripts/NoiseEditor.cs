@@ -12,7 +12,6 @@ public class NoiseEditor : MonoBehaviour
 {
     [SerializeField] private GameObject displayImageObject;
 
-
     [Header("World Menu Elements")]
     [SerializeField] private GameObject seedInput;
     [SerializeField] private Slider mapSizeSlider;
@@ -37,6 +36,10 @@ public class NoiseEditor : MonoBehaviour
     [SerializeField] private TextMeshProUGUI spawnSizeValue;
     [SerializeField] private TextMeshProUGUI circleBlurValue;
 
+
+    [Header("Other UI Elements")]
+    [SerializeField] private Button generateButton;
+
     private Color[] pixels;
     private string seedValue;
     private int mapSize;
@@ -52,10 +55,10 @@ public class NoiseEditor : MonoBehaviour
 
     private Texture2D terrainTexture;
     private Texture2D spawnCircleTexture;
+    private Texture2D mapTexture;
 
     private bool inputChanged;
     private bool isChanging;
-
 
     private void Start() {
 
@@ -84,11 +87,14 @@ public class NoiseEditor : MonoBehaviour
         noiseSlider.onValueChanged.AddListener(delegate { inputChanged = true; });
         biomeSlider.onValueChanged.AddListener(delegate { inputChanged = true; });
 
+        // more event listeners
         playerCountSlider.onValueChanged.AddListener(delegate { inputChanged = true; });
         distanceSlider.onValueChanged.AddListener(delegate { inputChanged = true; });
         spawnSizeSlider.onValueChanged.AddListener(delegate { inputChanged = true; });
         circleBlurSlider.onValueChanged.AddListener(delegate { inputChanged = true; });
 
+
+        generateButton.onClick.AddListener(delegate { GetComponent<MapGenerator>().GenerateMap(mapTexture); });
 
         // create first generation
         UpdateMapTexture();
@@ -165,8 +171,6 @@ public class NoiseEditor : MonoBehaviour
     }
 
     private void UpdateMapTexture() {
-
-
         if (!terrainTexture) {
             terrainTexture = UpdateTerrain();
         }
@@ -175,7 +179,9 @@ public class NoiseEditor : MonoBehaviour
             spawnCircleTexture = UpdateSpawnCircle();
         }
 
-        Sprite convertedSprite = Sprite.Create(terrainTexture, new Rect(0, 0, mapSize, mapSize), Vector2.zero);
+        mapTexture = AddTextures(terrainTexture, spawnCircleTexture);
+
+        Sprite convertedSprite = Sprite.Create(mapTexture, new Rect(0, 0, mapSize, mapSize), Vector2.zero);
         convertedSprite.name = "ConvertedSprite";
         convertedSprite.texture.filterMode = FilterMode.Point;
         displayImageObject.GetComponent<Image>().sprite = convertedSprite;
@@ -198,7 +204,7 @@ public class NoiseEditor : MonoBehaviour
         pixels = new Color[mapSize * mapSize];
 
         // Generate and apply the new texture
-        Texture2D newTexture = GenerateNoiseMap(mapSize, noiseScaleInt, Color.green, Color.red, seedValue);
+        Texture2D newTexture = GenerateNoiseMap(mapSize, noiseScaleInt, new Color(0f, 0.40f, 0f), new Color(0,0,0), seedValue);
 
         return newTexture;
     }
@@ -247,6 +253,8 @@ public class NoiseEditor : MonoBehaviour
     }
 
     private Texture2D UpdateSpawnCircle() {
+        Color brown = new Color(0, 0, 0.1f);
+
         // create spawnPoints list
         Vector2[] spawnPoints = new Vector2[numPlayers];
 
@@ -262,7 +270,6 @@ public class NoiseEditor : MonoBehaviour
             spawnPoints[i] = new Vector2(mapSize / 2 + x, mapSize / 2 + y);
         }
 
-
         // create new texture and set its filter mode to point
         Texture2D mapTexture = new Texture2D(mapSize, mapSize);
         mapTexture.filterMode = FilterMode.Point;
@@ -273,25 +280,31 @@ public class NoiseEditor : MonoBehaviour
         }
 
         Vector2 innerRange = new Vector2(distance - (int)(spawnSize / 3) - (blurScale * (spawnSize / 3)), distance - (int)(spawnSize / 3) + (blurScale * (spawnSize / 3)));
-        Vector2 outterRange = new Vector2(distance + (int)(spawnSize / 3) - (blurScale * (spawnSize / 3)), distance + (int)(spawnSize / 3) + (blurScale * (spawnSize / 3)));
+        Vector2 outerRange = new Vector2(distance + (int)(spawnSize / 3) - (blurScale * (spawnSize / 3)), distance + (int)(spawnSize / 3) + (blurScale * (spawnSize / 3)));
+
         // draw circle in-between players
-        for (int x = -(int)distance - (int)(spawnSize / 3); x <= (int)distance + (int)(spawnSize / 3); x++) {
-            for (int y = -(int)distance - (int)(spawnSize / 3); y <= (int)distance + (int)(spawnSize / 3); y++) {
+        for (int x = 0; x < mapSize; x++) {
+            for (int y = 0; y < mapSize; y++) {
 
                 // position of current pixel
-                int xPos = (mapSize / 2) + x;
-                int yPos = (mapSize / 2) + y;
+                int xPos = x;
+                int yPos = y;
 
-                float distance = Mathf.Sqrt(x * x + y * y);
+                float distance = Mathf.Sqrt((x - mapSize / 2) * (x - mapSize / 2) + (y - mapSize / 2) * (y - mapSize / 2));
 
-                float alpha = 0.0f;
+                float color = 0f;
 
-                if (distance > innerRange[1] && distance < outterRange[0]) alpha = 1.0f;
-                else if (distance > innerRange[0] && distance < innerRange[1]) alpha = (distance - innerRange[0]) / (innerRange[1] - innerRange[0]);
-                else if (distance > outterRange[0] && distance < outterRange[1]) alpha = 1 - (distance - outterRange[0]) / (outterRange[1] - outterRange[0]);
+                // inside spawn ring
+                if (distance > innerRange[1] && distance < outerRange[0]) color = 1;
+                // inner blur
+                else if (distance > innerRange[0] && distance < innerRange[1]) color = (distance - innerRange[0]) / (innerRange[1] - innerRange[0]);
+                // outer blur
+                else if (distance > outerRange[0] && distance < outerRange[1]) color = 1 - (distance - outerRange[0]) / (outerRange[1] - outerRange[0]);
 
 
-                pixels[yPos * mapSize + xPos] = Color.Lerp(pixels[yPos * mapSize + xPos], Vector4.zero, alpha);
+                if (xPos >= 0 && xPos < mapSize && yPos >= 0 && yPos < mapSize) {
+                    pixels[yPos * mapSize + xPos] = Color.Lerp(pixels[yPos * mapSize + xPos], brown, color);
+                }
             }
         }
 
@@ -313,19 +326,19 @@ public class NoiseEditor : MonoBehaviour
                     // distance form center circle
                     float distance = Mathf.Sqrt(x * x + y * y);
 
-                    float alpha = 0.0f;
+                    float alpha = 0f;
 
                     // inside the circle
                     if (distance < spawnSize) {
-                        alpha = 1.0f;
+                        alpha = 1f;
                     }
 
                     // within the blur range, fade from black to white
                     if (distance >= minBlurDis && distance <= maxBlurDis) {
-                        alpha = 1.0f - Mathf.Clamp01((distance - minBlurDis) / (blurScale * spawnSize));
+                        alpha = 1 - Mathf.Clamp01((distance - minBlurDis) / (blurScale * spawnSize));
                     }
 
-                    pixels[yPos * mapSize + xPos] = Color.Lerp(pixels[yPos * mapSize + xPos], Vector4.zero, alpha);
+                    pixels[yPos * mapSize + xPos] = Color.Lerp(pixels[yPos * mapSize + xPos], brown, alpha);
                 }
             }
         }
