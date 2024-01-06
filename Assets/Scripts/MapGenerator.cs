@@ -65,30 +65,19 @@ public class MapGenerator : MonoBehaviour {
 
         // generate texture based on spawn points
         spawnLocationsTexture = SpawnCircleTexture(spawnPoints);
+        spawnLocationsTexture = IncreaseContrast(spawnLocationsTexture, 2f);
         spawnLocationsTexture = BlurTexture(spawnLocationsTexture, 8);
-        GameObject spawnPlane = Instantiate(plane);
-        spawnPlane.transform.name = "Spawn Plane";
-        spawnPlane.transform.localScale = new Vector3(mapWidth / 10, 1, mapHeight / 10);
-        spawnPlane.GetComponent<Renderer>().material.mainTexture = spawnLocationsTexture;
-        spawnPlane.transform.localScale = Vector3.one * 2;
-        spawnPlane.transform.localPosition = new Vector3(-37, 0, 15);
 
-        terrainNoiseTexture = TerrainNoise();
-        GameObject terrainPlane = Instantiate(plane);
-        terrainPlane.transform.name = "Terrain Plane";
-        terrainPlane.transform.localScale = new Vector3(mapWidth / 10, 1, mapHeight / 10);
-        terrainPlane.GetComponent<Renderer>().material.mainTexture = terrainNoiseTexture;
-        terrainPlane.transform.localScale = Vector3.one * 2;
-        terrainPlane.transform.localPosition = new Vector3(-13, 0, 15);
+        terrainNoiseTexture = NoiseGenerator(10f);
+        terrainNoiseTexture = IncreaseContrast(terrainNoiseTexture, 1.25f);
 
         Texture2D combinedTexture = CombineTexture(terrainNoiseTexture, InvertTexture(spawnLocationsTexture), "subtract");
         GameObject combinedPlane = Instantiate(plane);
         combinedPlane.transform.name = "Combined Plane";
         combinedPlane.transform.localScale = new Vector3(mapWidth / 10, 1, mapHeight / 10);
         combinedPlane.GetComponent<Renderer>().material.mainTexture = combinedTexture;
-        combinedPlane.transform.localScale = Vector3.one * 2;
-        combinedPlane.transform.localPosition = new Vector3(11, 0, 15);
-
+        combinedPlane.transform.localScale = Vector3.one * 5;
+        combinedPlane.transform.localPosition = new Vector3(0, 0, 0);
 
 
     }
@@ -189,33 +178,31 @@ public class MapGenerator : MonoBehaviour {
         return blurredTexture;
     }
 
-    private Texture2D TerrainNoise() {
-        // create new texture and set its filter mode to point
-        Texture2D terrainTexture = new Texture2D(mapWidth, mapHeight);
-        terrainTexture.filterMode = FilterMode.Point;
+    private Texture2D NoiseGenerator(float scale) {
+        Texture2D noiseTexture = new Texture2D(mapWidth, mapHeight);
+        noiseTexture.filterMode = FilterMode.Point;
 
         // set pixel colors to white
         for (int i = 0; i < pixels.Length; i++) {
             pixels[i] = Color.white;
         }
 
-        float randomSeed = Random.value * 10;
-
-
         for (int x = 0; x < mapWidth; x++) {
             for (int y = 0; y < mapHeight; y++) {
-                float xCoord = (float)x / mapWidth * terrainScale;
-                float yCoord = (float)y / mapHeight * terrainScale;
+                float xCoord = (float)x / mapWidth * scale;
+                float yCoord = (float)y / mapHeight * scale;
                 float sample = Mathf.PerlinNoise(xCoord, yCoord);
                 pixels[y * mapWidth + x] = new Color(sample, sample, sample);
+                Debug.Log(sample);
             }
         }
 
-        terrainTexture.SetPixels(pixels);
-        terrainTexture.Apply();
+        noiseTexture.SetPixels(pixels);
+        noiseTexture.Apply();
 
-        return terrainTexture;
+        return noiseTexture;
     }
+
 
     private Texture2D SpawnCircleTexture(Vector2[] spawnPoints) {
 
@@ -227,7 +214,6 @@ public class MapGenerator : MonoBehaviour {
         for (int i = 0; i < pixels.Length; i++) {
             pixels[i] = Color.white;
         }
-
 
         Vector2 innerRange = new Vector2(spawnDistance - (int)(circleRadius / 3) - (blurScale * (circleRadius / 3)), spawnDistance - (int)(circleRadius / 3) + (blurScale * (circleRadius / 3)));
         Vector2 outterRange = new Vector2(spawnDistance + (int)(circleRadius / 3) - (blurScale * (circleRadius / 3)), spawnDistance + (int)(circleRadius / 3) + (blurScale * (circleRadius / 3)));
